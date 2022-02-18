@@ -22,7 +22,6 @@ def readPDF(fullname, filename):
     certificate_table = camelot.read_pdf(fullname, pages='all', flavor='stream',
                                          split_text = False, edge_tol=10,
                                          suppress_stdout=True)
-    
     # extracting what pages have 5 rows or less. (it means it is a scanned document)
     page_lengths = []
     for page in certificate_table:
@@ -546,7 +545,6 @@ def iterator(filepath, file):
                 continue  # if all or any of the pages contains image-based information, continue with the next document
             info_df = parsePDF(certificate_df, filename) # Had to put "filename" as input, because it was using "1" as was being
                                                             # assigned in the outer "filename" variable
-            
             if (type(info_df) != type(pd.DataFrame())) and info_df == None:
                 # if the document has annotations that could not be read, omit the document
                 continue
@@ -606,7 +604,8 @@ def iterator(filepath, file):
 
         if choice == 1:
             error = True
-            
+
+            # For applying the try-catch for the PermissionError message, I should implement something like this
             while error:
                 try:
                     ask2run_again = save_doc(filepath+'\\'+filename_out, certificates_info_df, 

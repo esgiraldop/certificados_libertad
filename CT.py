@@ -460,14 +460,15 @@ def load_codgs_natur_juridica():
     return codes
     
 
-def save_doc(fullname, certificates_info_df, certificates_analysis, num_cod_especs):
+def save_doc(filepath, filename_out, certificates_info_df, certificates_analysis, num_cod_especs):
     '''
     Function for saving the document which collects all the info derived from the
         analysis
 
     Parameters
     ----------
-    fullname : String containing the path and the name of the file.
+    filepath : String containing the path of the file.
+    filename_out: String containing the name of the file.
     certificates_info_df : DataFrame containing the information collected for
                                 all the CT's.
     certificates_analysis : DataFrame containing the analysis for each CT
@@ -477,20 +478,29 @@ def save_doc(fullname, certificates_info_df, certificates_analysis, num_cod_espe
 
     Returns
     -------
-    True if the analysis was successfully saved in the excel file. This boolean 
-        value is to be used for asking the user if wants to carry out another 
+    True if the analysis was successfully saved in the excel file. This boolean
+        value is to be used for asking the user if wants to carry out another
         analysis.
 
     '''
-    writer = pd.ExcelWriter(fullname, engine='xlsxwriter')
-    certificates_info_df.to_excel(writer, sheet_name='info_CT')
-    certificates_analysis.to_excel(writer, sheet_name='analisis_CT')
-    num_cod_especs.to_excel(writer, sheet_name='cods_por_cantidad')
-    writer.save()
-    print('Este archivo de excel se guardará con el nombre: ', fullname)
-    print('Archivo de excel guardado con éxito')
-    print('\n')
-    
+    error = True
+    while error:
+        fullname = filepath+'\\'+filename_out
+        try:
+            writer = pd.ExcelWriter(fullname, engine='xlsxwriter')
+            certificates_info_df.to_excel(writer, sheet_name='info_CT')
+            certificates_analysis.to_excel(writer, sheet_name='analisis_CT')
+            num_cod_especs.to_excel(writer, sheet_name='cods_por_cantidad')
+            writer.save()
+        except PermissionError:
+            print('La aplicación no tiene permisos para guardar el archivo en esta dirección: ', fullname)
+            filepath = input('Por favor ingrese otra dirección: ')
+        else:
+            error = False
+            print('Este archivo de excel se guardará con el nombre: ', fullname)
+            print('Archivo de excel guardado con éxito')
+            print('\n')
+
     return True
 
 def iterator(filepath, file):
@@ -608,7 +618,7 @@ def iterator(filepath, file):
             # For applying the try-catch for the PermissionError message, I should implement something like this
             while error:
                 try:
-                    ask2run_again = save_doc(filepath+'\\'+filename_out, certificates_info_df, 
+                    ask2run_again = save_doc(filepath, filename_out, certificates_info_df,
                              certificates_analysis, num_cod_especs)
                     error = False
                 except:
@@ -622,7 +632,7 @@ def iterator(filepath, file):
             print('\n')
             filename_out = filename_out+'.xlsx' 
     else:
-        ask2run_again = save_doc(filepath+'\\'+filename_out, certificates_info_df, 
+        ask2run_again = save_doc(filepath, filename_out, certificates_info_df,
                   certificates_analysis, num_cod_especs)
         
     return ask2run_again

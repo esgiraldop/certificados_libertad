@@ -13,7 +13,7 @@ import datetime as dt
 import re
 import time
 
-def readPDF(fullname, filename):
+def readPDF(fullname, filename, loglist):
     
     '''Function for reading a pdf with camelot and storing the certificado de libertad
         in a dataframe'''
@@ -29,12 +29,18 @@ def readPDF(fullname, filename):
     filtered_lengths = list(filter(lambda page_length: page_length <= 5, page_lengths))
    
     if certificate_table.n == 0 or len(filtered_lengths) > 0:
-        print(f'Hubo un error leyendo el archivo \'{filename}\'. Por favor revise que no contenga imágenes.')
+        msg = f'Hubo un error leyendo el archivo \'{filename}\'. Por favor revise que no contenga imágenes.'
+        loglist.append(msg)
+        print(msg)
+        loglist.append('\n')
         return None        
     elif certificate_table.n < len(CT2parse.pages):
         # If there are less parsed pages than the actual pages, probably there are
             # some that are image-based (e.g. scanned docs) instead of text-based pages
-        print(f'Hubo un error leyendo una de las páginas del archivo \'{filename}\'. Por favor revise que ninguna de las páginas contenga imágenes.')
+        msg = f'Hubo un error leyendo una de las páginas del archivo \'{filename}\'. Por favor revise que ninguna de las páginas contenga imágenes.'
+        loglist.append(msg)
+        print(msg)
+        loglist.append('\n')
         return None
          
 
@@ -60,12 +66,14 @@ def readPDF(fullname, filename):
         
         if item.Index > 10: # No need of going throughout the document
             break
-    
-    print('El documento no es un Certificado de tradición. Se omite el análisis del documento.')
+
+    msg = 'El documento no es un Certificado de tradición. Se omite el análisis del documento.'
+    loglist.append(msg)
+    print(msg)
     print('\n')
     return None
     
-def parsePDF(certificate_df, filename):
+def parsePDF(certificate_df, filename, loglist):
     
     ''' Function for reading the  certificado de libertad as a pdf and parsing
         the data in it
@@ -213,7 +221,10 @@ def parsePDF(certificate_df, filename):
             total_anots = int(total_anots.str.extract('\*(\d*)\*').values[0][0])
             break
         else: 
-            print('No se encontró el número total de anotaciones al final del documento. \nPor favor revise el archivo y asegúrese que coincidan con la cantidad de anotaciones extraídas en la hoja de excel resultante de este análisis')
+            msg = 'No se encontró el número total de anotaciones al final del documento. \nPor favor revise el archivo y asegúrese que coincidan con la cantidad de anotaciones extraídas en la hoja de excel resultante de este análisis'
+            loglist.append(msg)
+            loglist.append('\n')
+            print(msg)
             total_anots = 0
     
     
@@ -241,25 +252,34 @@ def parsePDF(certificate_df, filename):
     
     # Cheking if the extracted total number of annotations is coincident with the number of annotations extracted with camelot
     if (total_anots != len(no_anotaciones)) | (total_anots != len(especs)):
-        print('Hay algunas anotaciones que no pudieron ser identificadas, por lo que no puede realizarse el análisis. Descartando documento')
+        msg = 'Hay algunas anotaciones que no pudieron ser identificadas, por lo que no puede realizarse el análisis. Descartando documento...'
+        loglist.append(msg)
+        print(msg)
+        loglist.append('\n')
         wrong_cod_especs = list(cod_espec.where((cod_espec > 999) | (cod_espec < 100)).value_counts().index)
         
         wrongs_cod_especs_anots = info_df[info_df['Cod. espec.'].isin(wrong_cod_especs)]['No anotacion'].values
         
         if len(wrongs_cod_especs_anots) == 1:
-            print('Por favor revisar la anotación: ', wrongs_cod_especs_anots)
+            msg = f'Por favor revisar la anotación: {wrongs_cod_especs_anots}'
+            loglist.append(msg)
+            print(msg)
         if len(wrongs_cod_especs_anots) > 1:
-            print('Por favor revisar las anotaciones: ', wrongs_cod_especs_anots)
+            msg = f'Por favor revisar la anotaciones: {wrongs_cod_especs_anots}'
+            loglist.append(msg)
+            print(msg)
             
         return None
         
     elif (total_anots == len(no_anotaciones)) | (total_anots == len(especs)): 
-        
-        print(f'El número total de anotaciones es: {total_anots}')
+        msg = f'El número total de anotaciones es: {total_anots}'
+        loglist.append(msg)
+        loglist.append('\n')
+        print(msg)
     
         return info_df
 
-def read_codes(info_df, codes):
+def read_codes(info_df, codes, loglist):
     '''
     Function to read the codigos de naturaleza jurídica. Returns the type of
     operation that was made in each annotation according to its codigo of naturaleza
@@ -271,13 +291,17 @@ def read_codes(info_df, codes):
     missing_codes = info_df[info_df['Tipo'].isnull()]['Cod. espec.'].values
     
     if len(missing_codes) == 1:
-        print(f'El código {missing_codes} no está en la base de datos. No se pudo analizar el documento.\n\n')
+        msg = f'El código {missing_codes} no está en la base de datos. No se pudo analizar el documento.\n\n'
+        loglist.append(msg)
+        print(msg)
     elif len(missing_codes) > 1:
-        print(f'Los códigos {missing_codes} no están en la base de datos. No se pudo analizar el documento.\n\n')
+        msg = f'Los códigos {missing_codes} no están en la base de datos. No se pudo analizar el documento.\n\n'
+        loglist.append(msg)
+        print(msg)
     
     return info_df
     
-def make_analysis(info_df):
+def make_analysis(info_df, loglist):
     '''Function to evaluate if the document is approved or not.
             - Returns "ERROR EN EL ANALISIS" if there are "Cod. especs." that could not be found in the
                 database.
@@ -307,23 +331,29 @@ def make_analysis(info_df):
         
     if 'A REVISION' in info_df_types.index and info_df_types['A REVISION'] > 0: # if there is any "anotacion" with "A REVISION", the document is sent to be reviewed by the lawers
         a_revision_anots = info_df['No anotacion'][info_df['Tipo'] == 'A REVISION'].values
+        msg = 'El documento debe enviarse a revisión. Revisar cuidadosamente las anotaciones:\n' + ', '.join(a_revision_anots)
+        loglist.append(msg)
+        loglist.append('\n')
         print("El documento debe enviarse a revisión. Revisar cuidadosamente las anotaciones: ", *a_revision_anots, sep='\n')
         print("\n")
         return 'REVISION'
     elif Tipo_counts.loc['ABRE'] + Tipo_counts.loc['LIMITA'] > Tipo_counts.loc['CANCELA']:
-        print('Hay más aperturas y limitaciones que cancelaciones. El documento debe ir a revisión')
-        print('Análisis exitoso\n')
-        print("\n")
+        msg = 'Hay más aperturas y limitaciones que cancelaciones. El documento debe ir a revisión\nAnálisis exitoso\n\n'
+        loglist.append(msg)
+        # loglist.append('\n')
+        print(msg)
         return 'REVISION'
     elif Tipo_counts.loc['ABRE'] + Tipo_counts.loc['LIMITA'] < Tipo_counts.loc['CANCELA']:
-        print('Hay más cancelaciones que aperturas y limitaciones. El documento debe ir a revisión')
-        print('Análisis exitoso\n')
-        print("\n")
+        msg = 'Hay más cancelaciones que aperturas y limitaciones. El documento debe ir a revisión\nAnálisis exitoso\n\n'
+        loglist.append(msg)
+        loglist.append('\n')
+        print(msg)
         return 'REVISION'
     else:
-        print('El documento está aprobado')
-        print('Análisis exitoso\n')
-        print("\n")
+        msg = 'El documento está aprobado\nAnálisis exitoso\n\n'
+        loglist.append(msg)
+        print(msg)
+        loglist.append('\n')
         return 'APROBADO'
       
 
@@ -419,7 +449,23 @@ def init_choice_is_2(filepath, filename):
                     # If filepath and filename are ok, analyze the document
                     ask2run_again = iterator(filepath, filename)
                     return ask2run_again
-        
+
+def writeError2excel(filename):
+    '''
+    Function to write in excel an error in case the document cannot be read
+    Inputs
+    -------
+        filename: Name of the current filename
+    Outputs
+    -------
+        certificate_analysis : DataFrame containing error message for the current document
+    '''
+    certificate_analysis = pd.DataFrame(columns=['no matricula', 'Nombre_archivo', 'Aprobado_revision'])
+    certificate_analysis.loc[0, 'no matricula'] = ''
+    certificate_analysis.loc[0, 'Nombre_archivo'] = filename
+    certificate_analysis.loc[0, 'Aprobado_revision'] = 'ERROR'
+
+    return certificate_analysis
 
 def load_codgs_natur_juridica():
     '''
@@ -463,7 +509,7 @@ def load_codgs_natur_juridica():
 def save_doc(filepath, filename_out, certificates_info_df, certificates_analysis, num_cod_especs):
     '''
     Function for saving the document which collects all the info derived from the
-        analysis
+        analysis in an excel file
 
     Parameters
     ----------
@@ -500,12 +546,32 @@ def save_doc(filepath, filename_out, certificates_info_df, certificates_analysis
             print('Este archivo de excel se guardará con el nombre: ', fullname)
             print('Archivo de excel guardado con éxito')
             print('\n')
+            print('Recuerde revisar el archivo de excel resultante del análisis')
+            print('\n')
 
     return True
 
+def save_loglist2text(loglist, filepath, filename_out):
+    '''
+    Function to write in a text files the log messages obtained from the analysis of a CT or a series of CTs
+    Inputs
+    -------
+        loglist: List containing the logs
+        filename_out: String with the name of the excel file to be generated. The name of the the text file is
+                        filename_out + "_logfile.txt"
+    Outputs
+    -------
+    '''
+
+    #Put a conditional to test if the file does not exists already
+
+    with open(filepath+'\\'+filename_out+'_logfile.txt', 'w') as file:
+        for line in loglist:
+            file.write(line)
+        file.close()
+
 def iterator(filepath, file):
     '''
-    
     Function that iterates trough the documents (CT's) inside a folder (or one single
             document), extracts the information, organizes it and analyzes the
             data according to the recommendations from the lawyers from C21.
@@ -534,7 +600,8 @@ def iterator(filepath, file):
     
     codes = load_codgs_natur_juridica()
     ask2run_again = False
-    
+
+    loglist = list() # List for saving all the "log" messages comming out from the CT reading
       
     if file != 1: # in case the chosen option is *2*
         filenames = [file]
@@ -543,50 +610,91 @@ def iterator(filepath, file):
     
     certificates_info_df = pd.DataFrame() #dataframe where all the info of the certificates will be stored
     certificates_analysis = pd.DataFrame() # stores the analysis of "REVISION/APROBADO" for all the parsed CT's
-       
+
+    successAnalysis = 0 # To count how many successfull analyses were carried out in the current folder
+
+    pdf_filenames = list()
     for filename in filenames:
+        #Appending only the .pdf filenames
+        if filename.endswith('.pdf'):
+            pdf_filenames.append(filename)
+    if len(pdf_filenames) == 0:
+        # Making sure there are PDF documents in the current folder
+        print("No pudieron encontrarse archivos PDF en esta carpeta.\n")
+        return True
+
+    for filename in pdf_filenames:
         if filename.endswith('.pdf') is False: continue
-        print("\n")
+        loglist.append('\n')
+        print('\n')
+        loglist.append('-------------------------------------')
         print('-------------------------------------')
-        print(f'Analizando documento \"{filename}\"')
+        loglist.append('\n')
+        msg = f'Analizando documento \"{filename}\"'
+        loglist.append(msg)
+        print(msg)
+        loglist.append('\n')
         try:
-            certificate_df = readPDF(filepath+'\\'+filename, filename)
+            certificate_df = readPDF(filepath+'\\'+filename, filename, loglist)
             if np.all(certificate_df == None):
+                # Notifying the error in excel
+                certificate_analysis = writeError2excel(filename)
+                certificates_analysis = certificates_analysis.append(certificate_analysis)
                 continue  # if all or any of the pages contains image-based information, continue with the next document
-            info_df = parsePDF(certificate_df, filename) # Had to put "filename" as input, because it was using "1" as was being
+            info_df = parsePDF(certificate_df, filename, loglist) # Had to put "filename" as input, because it was using "1" as was being
                                                             # assigned in the outer "filename" variable
             if (type(info_df) != type(pd.DataFrame())) and info_df == None:
-                # if the document has annotations that could not be read, omit the document
+                # if the document has annotations that could not be read, omit the document and notify the error in excel
+                certificate_analysis = writeError2excel(filename)
+                certificates_analysis = certificates_analysis.append(certificate_analysis)
                 continue
             
         except:
+            msg = 'No pudo extraerse información del documento\n'
+            loglist.append(msg)
             print('No pudo extraerse información del documento\n')
+            # Notifying the error in excel
+            certificate_analysis = writeError2excel(filename)
+            certificates_analysis = certificates_analysis.append(certificate_analysis)
             continue
                 
         
         if len(info_df['no matricula'].unique()) > 1:
-            print('Este certificado tiene más de una matrícula asociada, lo que significa que pueden haber varios certificados en un mismo archivo. Descartando...')
+            msg = 'Este certificado tiene más de una matrícula asociada, lo que significa que pueden haber varios certificados en un mismo archivo. Descartando...'
+            loglist.append(msg)
+            loglist.append('\n')
+            print(msg)
+            # Notifying the error in excel
+            certificate_analysis = writeError2excel(filename)
+            certificates_analysis = certificates_analysis.append(certificate_analysis)
             continue
         
-        info_df = read_codes(info_df, codes)
+        info_df = read_codes(info_df, codes, loglist)
         
         certificate_analysis = pd.DataFrame(columns = ['no matricula', 'Nombre_archivo', 'Aprobado_revision'])
         certificate_analysis.loc[0,'no matricula'] = info_df.iloc[0,0]
         certificate_analysis.loc[0,'Nombre_archivo'] = info_df.iloc[0,1]
-        certificate_analysis.loc[0,'Aprobado_revision'] = make_analysis(info_df)
+        certificate_analysis.loc[0,'Aprobado_revision'] = make_analysis(info_df, loglist)
     
         certificates_info_df = certificates_info_df.append(info_df)
         certificates_analysis = certificates_analysis.append(certificate_analysis)
-    
+        successAnalysis += 1
+
+    if successAnalysis == 0:
+        # Conditional for avoiding an error downstream
+        print('\n')
+        print('Ninguno de los documentos PDF pudo ser analizado con éxito.')
+        print('\n')
+        return True
+    certificates_analysis.set_index('no matricula', inplace=True)
+    certificates_info_df.set_index('no matricula', inplace=True)
     # in case only one certificate is selected, but could not be read
     if len(certificates_info_df) == 0:
         return True
-
     # Finding the different codigos de especificación and their frequency of appearance
     num_cod_especs = pd.DataFrame(certificates_info_df['Cod. espec.'].value_counts())
     
     # Assigning the meaning of the especification from the codigos de naturaleza juridica database
-    
     
     num_cod_especs = pd.DataFrame(num_cod_especs).merge(codes, left_index=True, right_index=True, how='left')
     # num_cod_especs['Cod. espec.'].plot(xlabel='Código de especificación', ylabel='Cantidad', kind='bar')
@@ -594,8 +702,11 @@ def iterator(filepath, file):
     # filename = 'Analisis_certificados_libertad.xlsx'
     filename_out = input('Por favor ingrese el nombre del archivo de excel que contiene el análisis: ')
     print('\n')
+    # Saving all the "log" messages into a text file
+    save_loglist2text(loglist, filepath, filename_out)
+
     filename_out = filename_out+'.xlsx'
-    
+
     # checking there are not files in the current folder with the same name already
     
     while filename_out in os.listdir(filepath):
@@ -681,9 +792,6 @@ def main():
 
         if ask2run_again == '0':
             return True
-
-        print('Recuerde revisar el archivo de excel resultante del análisis')
-        print('\n')
 
         if run_again_func(ask2run_again):
             return True

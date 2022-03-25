@@ -539,8 +539,18 @@ def save_doc(filepath, filename_out, certificates_info_df, certificates_analysis
             num_cod_especs.to_excel(writer, sheet_name='cods_por_cantidad')
             writer.save()
         except PermissionError:
-            print('La aplicación no tiene permisos para guardar el archivo en esta dirección: ', fullname)
-            filepath = input('Por favor ingrese otra dirección: ')
+            # Checking if file is open in excel
+            try:
+                myfile = open(fullname, "r+")  # or "a+", whatever you need
+            except PermissionError:
+                input(f'Cierre el archivo \'{fullname}\' y presione cualquier tecla:')
+                print('\n')
+            else:
+                myfile.close()
+                # If the file is not open by another process, then it must be due to permission issues for saving the
+                    # file in the current filepath, so another direction must be asked
+                print('La aplicación no tiene permisos para guardar el archivo en esta dirección: ', fullname)
+                filepath = input('Por favor ingrese otra dirección: ')
         else:
             error = False
             print('Este archivo de excel se guardará con el nombre: ', fullname)
@@ -695,7 +705,6 @@ def iterator(filepath, file):
     num_cod_especs = pd.DataFrame(certificates_info_df['Cod. espec.'].value_counts())
     
     # Assigning the meaning of the especification from the codigos de naturaleza juridica database
-    
     num_cod_especs = pd.DataFrame(num_cod_especs).merge(codes, left_index=True, right_index=True, how='left')
     # num_cod_especs['Cod. espec.'].plot(xlabel='Código de especificación', ylabel='Cantidad', kind='bar')
     
@@ -708,7 +717,6 @@ def iterator(filepath, file):
     filename_out = filename_out+'.xlsx'
 
     # checking there are not files in the current folder with the same name already
-    
     while filename_out in os.listdir(filepath):
         
         choice = 3
@@ -724,20 +732,9 @@ def iterator(filepath, file):
                 choice  = int(choice)
 
         if choice == 1:
-            error = True
-
-            # For applying the try-catch for the PermissionError message, I should implement something like this
-            while error:
-                try:
-                    ask2run_again = save_doc(filepath, filename_out, certificates_info_df,
-                             certificates_analysis, num_cod_especs)
-                    error = False
-                except:
-                    input(f'Cierre el archivo \'{filename}\' y presione cualquier tecla:')
-                    print('\n')
-                    
+            ask2run_again = save_doc(filepath, filename_out, certificates_info_df,
+                     certificates_analysis, num_cod_especs)
             break
-                    
         else:
             filename_out = input('Por favor ingrese el nombre del archivo de excel que contiene el análisis: ')
             print('\n')

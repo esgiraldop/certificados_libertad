@@ -103,7 +103,10 @@ def parsePDF(certificate_df, filename, loglist):
     date_now = dt.datetime.strptime(date_now, '%d-%m-%Y') # formating the current time
     # Checking if the certificate is more than 90 days old
     delta_time = date_now-print_date
-    print(f'Este certificado tiene {delta_time.days} días')
+    msg = f'Este certificado tiene {delta_time.days} días'
+    loglist.append(msg)
+    loglist.append('\n')
+    print(msg)
     # if delta_time.days > 90:
         # return 'too old'
     
@@ -254,6 +257,14 @@ def parsePDF(certificate_df, filename, loglist):
     
     # Cheking if the extracted total number of annotations is coincident with the number of annotations extracted with camelot
     if (total_anots != len(no_anotaciones)) | (total_anots != len(especs)):
+
+        if (total_anots < len(no_anotaciones)) | (total_anots < len(especs)):
+            msg = 'Al parecer, hay más de un certificado de libertad en el PDF.\nRecuerde que solo puede haber un certificado por PDF. Descartando documento...'
+            loglist.append(msg)
+            print(msg)
+            loglist.append('\n')
+            return None
+
         msg = 'Hay algunas anotaciones que no pudieron ser identificadas, por lo que no puede realizarse el análisis. Descartando documento...'
         loglist.append(msg)
         print(msg)
@@ -647,46 +658,29 @@ def iterator(filepath, file):
         print(msg)
         loglist.append('\n')
 
-        # The next block of code is to be eliminated
-        certificate_df = readPDF(filepath + '\\' + filename, filename, loglist)
-        if np.all(certificate_df == None):
+        try:
+            certificate_df = readPDF(filepath+'\\'+filename, filename, loglist)
+            if np.all(certificate_df == None):
+                # Notifying the error in excel
+                certificate_analysis = writeError2excel(filename)
+                certificates_analysis = certificates_analysis.append(certificate_analysis)
+                continue  # if all or any of the pages contains image-based information, continue with the next document
+            info_df = parsePDF(certificate_df, filename, loglist) # Had to put "filename" as input, because it was using "1" as was being
+                                                            # assigned in the outer "filename" variable
+            if (type(info_df) != type(pd.DataFrame())) and info_df == None:
+                # if the document has annotations that could not be read, omit the document and notify the error in excel
+                certificate_analysis = writeError2excel(filename)
+                certificates_analysis = certificates_analysis.append(certificate_analysis)
+                continue
+
+        except:
+            msg = 'No pudo extraerse información del documento\n'
+            loglist.append(msg)
+            print('No pudo extraerse información del documento\n')
             # Notifying the error in excel
             certificate_analysis = writeError2excel(filename)
             certificates_analysis = certificates_analysis.append(certificate_analysis)
-            continue  # if all or any of the pages contains image-based information, continue with the next document
-        info_df = parsePDF(certificate_df, filename,
-                           loglist)  # Had to put "filename" as input, because it was using "1" as was being
-        # assigned in the outer "filename" variable
-        if (type(info_df) != type(pd.DataFrame())) and info_df == None:
-            # if the document has annotations that could not be read, omit the document and notify the error in excel
-            certificate_analysis = writeError2excel(filename)
-            certificates_analysis = certificates_analysis.append(certificate_analysis)
             continue
-
-        # try:
-        #     certificate_df = readPDF(filepath+'\\'+filename, filename, loglist)
-        #     if np.all(certificate_df == None):
-        #         # Notifying the error in excel
-        #         certificate_analysis = writeError2excel(filename)
-        #         certificates_analysis = certificates_analysis.append(certificate_analysis)
-        #         continue  # if all or any of the pages contains image-based information, continue with the next document
-        #     info_df = parsePDF(certificate_df, filename, loglist) # Had to put "filename" as input, because it was using "1" as was being
-        #                                                     # assigned in the outer "filename" variable
-        #     if (type(info_df) != type(pd.DataFrame())) and info_df == None:
-        #         # if the document has annotations that could not be read, omit the document and notify the error in excel
-        #         certificate_analysis = writeError2excel(filename)
-        #         certificates_analysis = certificates_analysis.append(certificate_analysis)
-        #         continue
-        #
-        # except:
-        #     msg = 'No pudo extraerse información del documento\n'
-        #     loglist.append(msg)
-        #     print('No pudo extraerse información del documento\n')
-        #     # Notifying the error in excel
-        #     certificate_analysis = writeError2excel(filename)
-        #     certificates_analysis = certificates_analysis.append(certificate_analysis)
-        #     continue
-                
         
         if len(info_df['no matricula'].unique()) > 1:
             msg = 'Este certificado tiene más de una matrícula asociada, lo que significa que pueden haber varios certificados en un mismo archivo. Descartando...'

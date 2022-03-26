@@ -42,7 +42,6 @@ def readPDF(fullname, filename, loglist):
         print(msg)
         loglist.append('\n')
         return None
-         
 
     certificate_df = pd.DataFrame()
     
@@ -191,14 +190,15 @@ def parsePDF(certificate_df, filename, loglist):
         especs.loc[idx] =  especs.loc[idx] + appended_info
     
     # Extracting the "codigo de naturaleza jurídica"
-    especs = especs.str.extract(r':(?:.*:){1} (\d{3,4} ?\D.*)', expand=False).str.split(r'\s', n=1, expand=True)
+    especs = especs.str.extract(r':(?:[^:]*:){1} (\d{3,4} ?\D.*)', expand=False).str.split(r'\s', n=1, expand=True)
     # especs.str.extract(r':.*: (\d.*)', expand=False)
     
     # regex # 1 --> r':.*: (\d.*)'
     # regex # 2 --> r'(?!:.*)(\d.*)'
-    # regex # 3 --> r'(?!:.*: )(\d.*)'r'
+    # regex # 3 --> r'(?!:.*: )(\d.*)'
     # regex # 4 --> r':.*: (\d{3,4} ?\D.*)'
-    # regex # 5 (best so far) --> r':(?:.*:){1} (\d{3,4} ?\D.*)'
+    # regex # 5 --> r':(?:.*:){1} (\d{3,4} ?\D.*)'
+    # regex # 6 (best so far 2022-03-25) --> r':(?:[^:]*:){1} (\d{3,4} ?\D.*)'
     
     # where there are specification numbers starting with a zero, eliminate the zero
     especs.loc[especs[0][especs[0].str.startswith('0')].index,0] = especs.loc[especs[0][especs[0].str.startswith('0')].index,0].str.replace('^0', '', regex=True)
@@ -236,7 +236,9 @@ def parsePDF(certificate_df, filename, loglist):
     especs.reset_index(drop=True, inplace=True)
     cancel_anotaciones.reset_index(drop=True, inplace=True)
     nom_archivos = [filename]*len(no_anotaciones) # Why the hell am I doing this?
-    cod_espec = especs[0].astype('int')
+    cod_espec = especs[0].astype('int') # This line fails when, mistakenly, a specification code that not only contains
+                                            # a number is extracted from the regex some lines above.
+                                            # For example: "2001-00148-00"
        
     info_df = pd.DataFrame([nom_archivos, no_anotaciones, fechas_anotaciones, radicados_anotaciones,
                                 valor, cod_espec, especs[1], cancel_anotaciones]).T
@@ -644,29 +646,46 @@ def iterator(filepath, file):
         loglist.append(msg)
         print(msg)
         loglist.append('\n')
-        try:
-            certificate_df = readPDF(filepath+'\\'+filename, filename, loglist)
-            if np.all(certificate_df == None):
-                # Notifying the error in excel
-                certificate_analysis = writeError2excel(filename)
-                certificates_analysis = certificates_analysis.append(certificate_analysis)
-                continue  # if all or any of the pages contains image-based information, continue with the next document
-            info_df = parsePDF(certificate_df, filename, loglist) # Had to put "filename" as input, because it was using "1" as was being
-                                                            # assigned in the outer "filename" variable
-            if (type(info_df) != type(pd.DataFrame())) and info_df == None:
-                # if the document has annotations that could not be read, omit the document and notify the error in excel
-                certificate_analysis = writeError2excel(filename)
-                certificates_analysis = certificates_analysis.append(certificate_analysis)
-                continue
-            
-        except:
-            msg = 'No pudo extraerse información del documento\n'
-            loglist.append(msg)
-            print('No pudo extraerse información del documento\n')
+
+        # The next block of code is to be eliminated
+        certificate_df = readPDF(filepath + '\\' + filename, filename, loglist)
+        if np.all(certificate_df == None):
             # Notifying the error in excel
             certificate_analysis = writeError2excel(filename)
             certificates_analysis = certificates_analysis.append(certificate_analysis)
+            continue  # if all or any of the pages contains image-based information, continue with the next document
+        info_df = parsePDF(certificate_df, filename,
+                           loglist)  # Had to put "filename" as input, because it was using "1" as was being
+        # assigned in the outer "filename" variable
+        if (type(info_df) != type(pd.DataFrame())) and info_df == None:
+            # if the document has annotations that could not be read, omit the document and notify the error in excel
+            certificate_analysis = writeError2excel(filename)
+            certificates_analysis = certificates_analysis.append(certificate_analysis)
             continue
+
+        # try:
+        #     certificate_df = readPDF(filepath+'\\'+filename, filename, loglist)
+        #     if np.all(certificate_df == None):
+        #         # Notifying the error in excel
+        #         certificate_analysis = writeError2excel(filename)
+        #         certificates_analysis = certificates_analysis.append(certificate_analysis)
+        #         continue  # if all or any of the pages contains image-based information, continue with the next document
+        #     info_df = parsePDF(certificate_df, filename, loglist) # Had to put "filename" as input, because it was using "1" as was being
+        #                                                     # assigned in the outer "filename" variable
+        #     if (type(info_df) != type(pd.DataFrame())) and info_df == None:
+        #         # if the document has annotations that could not be read, omit the document and notify the error in excel
+        #         certificate_analysis = writeError2excel(filename)
+        #         certificates_analysis = certificates_analysis.append(certificate_analysis)
+        #         continue
+        #
+        # except:
+        #     msg = 'No pudo extraerse información del documento\n'
+        #     loglist.append(msg)
+        #     print('No pudo extraerse información del documento\n')
+        #     # Notifying the error in excel
+        #     certificate_analysis = writeError2excel(filename)
+        #     certificates_analysis = certificates_analysis.append(certificate_analysis)
+        #     continue
                 
         
         if len(info_df['no matricula'].unique()) > 1:

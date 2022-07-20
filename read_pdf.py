@@ -63,3 +63,21 @@ def plot_pdf(table):
     ''' Function for visual debugging of the pdfs'''
 
     camelot.plot(table, kind='contour')
+
+
+def writeError2excel(filename):
+    '''
+    Function to write in excel an error in case the document cannot be read
+    Inputs
+    -------
+        filename: Name of the current filename
+    Outputs
+    -------
+        certificate_analysis : DataFrame containing error message for the current document
+    '''
+    certificate_analysis = pd.DataFrame(columns=['no matricula', 'Nombre_archivo', 'Aprobado_revision'])
+    certificate_analysis.loc[0, 'no matricula'] = ''
+    certificate_analysis.loc[0, 'Nombre_archivo'] = filename
+    certificate_analysis.loc[0, 'Aprobado_revision'] = 'ERROR'
+
+    return certificate_analysis

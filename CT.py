@@ -102,22 +102,6 @@ def init_choice_is_2(filepath, filename):
                     ask2run_again = iterator(filepath, filename)
                     return ask2run_again
 
-def writeError2excel(filename):
-    '''
-    Function to write in excel an error in case the document cannot be read
-    Inputs
-    -------
-        filename: Name of the current filename
-    Outputs
-    -------
-        certificate_analysis : DataFrame containing error message for the current document
-    '''
-    certificate_analysis = pd.DataFrame(columns=['no matricula', 'Nombre_archivo', 'Aprobado_revision'])
-    certificate_analysis.loc[0, 'no matricula'] = ''
-    certificate_analysis.loc[0, 'Nombre_archivo'] = filename
-    certificate_analysis.loc[0, 'Aprobado_revision'] = 'ERROR'
-
-    return certificate_analysis
 
 def iterator(filepath, file):
     '''
@@ -188,14 +172,14 @@ def iterator(filepath, file):
             certificate_df = read_pdf.main(filepath+'\\'+filename, filename, loglist)
             if np.all(certificate_df == None):
                 # Notifying the error in excel
-                certificate_analysis = writeError2excel(filename)
+                certificate_analysis = read_pdf.writeError2excel(filename)
                 certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
                 continue  # if all or any of the pages contains image-based information, continue with the next document
             info_df = parse_pdf.main(certificate_df, filename, loglist) # Had to put "filename" as input, because it was using "1" as was being
                                                             # assigned in the outer "filename" variable
             if (type(info_df) != type(pd.DataFrame())) and info_df == None:
                 # if the document has annotations that could not be read, omit the document and notify the error in excel
-                certificate_analysis = writeError2excel(filename)
+                certificate_analysis = read_pdf.writeError2excel(filename)
                 certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
                 continue
 
@@ -204,7 +188,7 @@ def iterator(filepath, file):
             loglist.append(msg)
             print('No pudo extraerse información del documento\n')
             # Notifying the error in excel
-            certificate_analysis = writeError2excel(filename)
+            certificate_analysis = read_pdf.writeError2excel(filename)
             certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
             continue
         
@@ -214,7 +198,7 @@ def iterator(filepath, file):
             loglist.append('\n')
             print(msg)
             # Notifying the error in excel
-            certificate_analysis = writeError2excel(filename)
+            certificate_analysis = read_pdf.writeError2excel(filename)
             certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
             continue
         

@@ -605,14 +605,14 @@ def iterator(filepath, file):
             if np.all(certificate_df == None):
                 # Notifying the error in excel
                 certificate_analysis = writeError2excel(filename)
-                certificates_analysis = certificates_analysis.append(certificate_analysis)
+                certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
                 continue  # if all or any of the pages contains image-based information, continue with the next document
             info_df = parsePDF(certificate_df, filename, loglist) # Had to put "filename" as input, because it was using "1" as was being
                                                             # assigned in the outer "filename" variable
             if (type(info_df) != type(pd.DataFrame())) and info_df == None:
                 # if the document has annotations that could not be read, omit the document and notify the error in excel
                 certificate_analysis = writeError2excel(filename)
-                certificates_analysis = certificates_analysis.append(certificate_analysis)
+                certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
                 continue
 
         except:
@@ -621,7 +621,7 @@ def iterator(filepath, file):
             print('No pudo extraerse información del documento\n')
             # Notifying the error in excel
             certificate_analysis = writeError2excel(filename)
-            certificates_analysis = certificates_analysis.append(certificate_analysis)
+            certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
             continue
         
         if len(info_df['no matricula'].unique()) > 1:
@@ -631,7 +631,7 @@ def iterator(filepath, file):
             print(msg)
             # Notifying the error in excel
             certificate_analysis = writeError2excel(filename)
-            certificates_analysis = certificates_analysis.append(certificate_analysis)
+            certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
             continue
         
         info_df = read_codes(info_df, codes, loglist)
@@ -641,8 +641,8 @@ def iterator(filepath, file):
         certificate_analysis.loc[0,'Nombre_archivo'] = info_df.iloc[0,1]
         certificate_analysis.loc[0,'Aprobado_revision'] = make_analysis(info_df, loglist)
     
-        certificates_info_df = certificates_info_df.append(info_df)
-        certificates_analysis = certificates_analysis.append(certificate_analysis)
+        certificates_info_df = pd.concat([certificates_info_df, info_df])
+        certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
         successAnalysis += 1
 
     if successAnalysis == 0:

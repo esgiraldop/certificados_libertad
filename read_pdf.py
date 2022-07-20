@@ -1,4 +1,5 @@
 import camelot
+import pandas as pd
 
 def main(fullname, filename, loglist):
     '''Function for reading a pdf with camelot and storing the certificado de libertad

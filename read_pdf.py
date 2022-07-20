@@ -58,3 +58,8 @@ def main(fullname, filename, loglist):
     print(msg)
     print('\n')
     return None
+
+def plot_pdf(table):
+    ''' Function for visual debugging of the pdfs'''
+
+    camelot.plot(table, kind='contour')

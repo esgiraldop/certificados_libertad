@@ -1,7 +1,5 @@
 import os
-
-from CT import iterator
-
+import iterator
 
 def init_choice_func():
     '''
@@ -51,7 +49,7 @@ def init_choice_is_1(filepath, filename):
             filepath = 1 # to keep in the loop
         else:
             # If filepath is ok, analyze the documents inside the folder or filepath
-            ask2run_again = iterator(filepath, filename)
+            ask2run_again = iterator.main(filepath, filename)
             return ask2run_again
 
 
@@ -90,7 +88,7 @@ def init_choice_is_2(filepath, filename):
                     filename = 1 # to keep in the loop
                 else:
                     # If filepath and filename are ok, analyze the document
-                    ask2run_again = iterator(filepath, filename)
+                    ask2run_again = iterator.main(filepath, filename)
                     return ask2run_again
 
 

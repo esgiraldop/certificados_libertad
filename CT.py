@@ -10,28 +10,7 @@ import pandas as pd
 import os
 import read_pdf
 import parse_pdf
-
-def read_codes(info_df, codes, loglist):
-    '''
-    Function to read the codigos de naturaleza jurídica. Returns the type of
-    operation that was made in each annotation according to its codigo of naturaleza
-    juridica
-    '''
-    
-    info_df = info_df.merge(codes, how='left', left_on='Cod. espec.', right_index=True)
-    
-    missing_codes = info_df[info_df['Tipo'].isnull()]['Cod. espec.'].values
-    
-    if len(missing_codes) == 1:
-        msg = f'El código {missing_codes} no está en la base de datos. No se pudo analizar el documento.\n\n'
-        loglist.append(msg)
-        print(msg)
-    elif len(missing_codes) > 1:
-        msg = f'Los códigos {missing_codes} no están en la base de datos. No se pudo analizar el documento.\n\n'
-        loglist.append(msg)
-        print(msg)
-    
-    return info_df
+import codgs_juridics
     
 def make_analysis(info_df, loglist):
     '''Function to evaluate if the document is approved or not.
@@ -87,12 +66,7 @@ def make_analysis(info_df, loglist):
         print(msg)
         loglist.append('\n')
         return 'APROBADO'
-      
 
-def plot_pdf(table):
-    ''' Function for visual debugging of the pdfs'''
-    
-    camelot.plot(table, kind='contour')
 
 def init_choice_func():
     '''
@@ -167,7 +141,7 @@ def init_choice_is_2(filepath, filename):
                 print('\n')
 
                 if filename == '0':
-                    return '0' # For coming back to the main menu
+                    return '0' # For coming back to the read_codes menu
 
                 filename = filename+'.pdf'
                 
@@ -199,44 +173,6 @@ def writeError2excel(filename):
 
     return certificate_analysis
 
-def load_codgs_natur_juridica():
-    '''
-    Function which asks the user for the filepath where the database of codigos
-        the naturaleza juridica is and generates the database in a dataframe
-        for using in the analysis.
-
-    Returns
-    -------
-    codes : DataFrame containing the database for the codes.
-
-    '''
-    found_file = False
-    filename2search = 'cods_naturaleza_juridica.csv'
-    
-    while found_file == False:
-        
-        # cods_filepath = r'C:\Users\Usuario\OneDrive - Universidad EAFIT\darsetech\parse_cert_libertad\\'
-        cods_filepath = input('Por favor ingrese la dirección de la carpeta donde se encuentra la base de datos de códigos de naturaleza jurídica: ')
-        cods_filepath = cods_filepath+'\\'
-        print('\n')
-        try:
-            files_list = os.listdir(cods_filepath)
-        except FileNotFoundError:
-            print('No se pudo encontrar la carpeta. Por favor ingrese una opción válida.')
-            print('\n')
-            found_file == False # to keep in the loop
-        else:
-            if filename2search not in files_list:
-                print(f'No se pudo encontrar el archivo {filename2search}. Por favor ingrese otra dirección.')
-                print('\n')
-                found_file == False # to keep in the loop
-            else:
-                codes = pd.read_csv(cods_filepath + filename2search, sep=';')
-                codes.set_index('Codigo', inplace=True)
-                found_file = True
-        
-    return codes
-    
 
 def save_doc(filepath, filename_out, certificates_info_df, certificates_analysis, num_cod_especs):
     '''
@@ -320,7 +256,7 @@ def iterator(filepath, file):
     
     Returns
     ---------
-    ask2run_again: Boolean value to evaluate in the main body of the code whether
+    ask2run_again: Boolean value to evaluate in the read_codes body of the code whether
                 the user wants to run the program again or not.
     
     '''
@@ -340,7 +276,7 @@ def iterator(filepath, file):
     
     filenames = os.listdir(filepath)
     
-    codes = load_codgs_natur_juridica()
+    codes = codgs_juridics.load_codes()
     ask2run_again = False
 
     loglist = list() # List for saving all the "log" messages comming out from the CT reading
@@ -411,7 +347,7 @@ def iterator(filepath, file):
             certificates_analysis = pd.concat([certificates_analysis, certificate_analysis])
             continue
         
-        info_df = read_codes(info_df, codes, loglist)
+        info_df = codgs_juridics.read_codes(info_df, codes, loglist)
         
         certificate_analysis = pd.DataFrame(columns = ['no matricula', 'Nombre_archivo', 'Aprobado_revision'])
         certificate_analysis.loc[0,'no matricula'] = info_df.iloc[0,0]
@@ -559,7 +495,7 @@ def main():
 
 
 #################################################################
-##################### main body of the code #####################
+##################### read_codes body of the code #####################
 #################################################################
 
 program_title()

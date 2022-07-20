@@ -5,8 +5,7 @@ Created on Sat Oct 17 21:44:04 2020
 @author: ASUS
 """
 
-from menus import init_choice_func, init_choice_is_1, init_choice_is_2, run_again_func
-
+import menus
 
 def program_title():
     print('%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%')
@@ -19,19 +18,19 @@ def program_title():
 
 def main():
 
-    init_choice = init_choice_func()
+    init_choice = menus.init_choice_func()
 
     if init_choice == 1:
 
         filepath = 1
         filename = 1
 
-        ask2run_again = init_choice_is_1(filepath, filename)
+        ask2run_again = menus.init_choice_is_1(filepath, filename)
 
         if ask2run_again == '0':
             return True
 
-        if run_again_func(ask2run_again):
+        if menus.run_again_func(ask2run_again):
             return True
         else:
             print('Gracias por usar la aplicación. Vuelva pronto!')
@@ -43,7 +42,7 @@ def main():
         filepath = 1
         filename = 1
 
-        ask2run_again = init_choice_is_2(filepath, filename)
+        ask2run_again = menus.init_choice_is_2(filepath, filename)
 
         if ask2run_again == '0':
             return True
@@ -51,7 +50,7 @@ def main():
         print('Recuerde revisar el archivo de excel resultante del análisis')
         print('\n')
 
-        if run_again_func(ask2run_again):
+        if menus.run_again_func(ask2run_again):
             return True
         else:
             print('Gracias por usar la aplicación. Vuelva pronto!')

@@ -39,6 +39,7 @@ def main(info_df, loglist):
         print("\n")
         return 'REVISION'
     elif Tipo_counts.loc['ABRE'] + Tipo_counts.loc['LIMITA'] > Tipo_counts.loc['CANCELA']:
+        # Implement here the revision of open mortgages
         msg = 'Hay más aperturas y limitaciones que cancelaciones. El documento debe ir a revisión\nAnálisis exitoso\n\n'
         loglist.append(msg)
         # loglist.append('\n')

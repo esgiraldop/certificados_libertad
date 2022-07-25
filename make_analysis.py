@@ -1,5 +1,19 @@
 import pandas as pd
 
+def check_open_mortgage(info_df):
+
+    codes_2open_mortage = [201, 203, 204, 205, 206, 207, 208, 209, 210, 211, 213, 215, 217, 218, 219, 372, 426]
+
+    mortages_df = info_df[info_df['Cod. espec.'].isin(codes_2open_mortage)][['No anotacion', 'Cod. espec.']]
+    cancelled_anots_series = info_df['Cancela anotacion'][info_df['Cancela anotacion'].isnull()==False]
+    cancelled_anots = list()
+    for _, val in cancelled_anots_series.iteritems():
+        cancelled_anots.extend(val) # What if there is an annotation that is cancelled more than once?
+
+    msg = '''De la(s) anotación(es) abierta(s), todas '''
+    ans = True
+    return msg, ans
+
 def main(info_df, loglist):
     '''Function to evaluate if the document is approved or not.
             - Returns "ERROR EN EL ANALISIS" if there are "Cod. especs." that could not be found in the
@@ -40,11 +54,19 @@ def main(info_df, loglist):
         return 'REVISION'
     elif Tipo_counts.loc['ABRE'] + Tipo_counts.loc['LIMITA'] > Tipo_counts.loc['CANCELA']:
         # Implement here the revision of open mortgages
-        msg = 'Hay más aperturas y limitaciones que cancelaciones. El documento debe ir a revisión\nAnálisis exitoso\n\n'
-        loglist.append(msg)
-        # loglist.append('\n')
-        print(msg)
-        return 'REVISION'
+        msg, ans = check_open_mortgage(info_df)
+        if ans:
+            loglist.append(msg)
+            # loglist.append('\n')
+            print(msg)
+            return 'APROBADO CON HIPOTECA'
+        else:
+            msg = '''Hay más aperturas y limitaciones que cancelaciones. El documento debe ir a revisión
+                    \nAnálisis exitoso\n\n'''
+            loglist.append(msg)
+            # loglist.append('\n')
+            print(msg)
+            return 'REVISION'
     elif Tipo_counts.loc['ABRE'] + Tipo_counts.loc['LIMITA'] < Tipo_counts.loc['CANCELA']:
         msg = 'Hay más cancelaciones que aperturas y limitaciones. El documento debe ir a revisión\nAnálisis exitoso\n\n'
         loglist.append(msg)

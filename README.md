@@ -14,4 +14,4 @@ In case there is a problem installing the libraries from the requirements.txt, e
 
 source: (https://stackoverflow.com/questions/69895208/python-conda-error-could-not-install-packages-due-to-an-oserror-winerror-5/69902057)
 
-Written in Python 3.9.2
+Written in Python 3.10.4

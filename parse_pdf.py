@@ -176,7 +176,10 @@ def main(certificate_df, filename, loglist):
 
     info_df['no matricula'] = no_matricula
 
+    # concat column with num of matricula and the rest of the dataframe
     info_df = pd.concat([info_df['no matricula'], info_df.iloc[:, 0:-1]], axis=1)
+    # Eliminating all the zeroes at the left on column "No anotacion"
+    info_df['No anotacion'] = info_df['No anotacion'].str.replace('^0*', '', regex=True)
 
     # Cheking if the extracted total number of annotations is coincident with the number of annotations extracted with camelot
     if (total_anots != len(no_anotaciones)) | (total_anots != len(especs)):

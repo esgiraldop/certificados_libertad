@@ -28,7 +28,7 @@ def main(info_df, loglist):
         # If the CT has any 'Cod. espec.' that could not be found in the database, skip this function
         return 'ERROR EN EL ANALISIS'
 
-    Tipo_counts = pd.Series([0, 0, 0, 0, 0], index=['ABRE', 'LIMITA', 'CANCELA', 'INFORMA', 'A REVISION'])
+    Tipo_counts = pd.Series([0, 0, 0, 0, 0], index=['ABRE', 'LIMITAN', 'CANCELAN', 'INFORMAN', 'A REVISION'])
     info_df_types = info_df['Tipo'].value_counts()
 
     # taking into account that an "anotación" can cancell multiple other "anotaciones" as well
